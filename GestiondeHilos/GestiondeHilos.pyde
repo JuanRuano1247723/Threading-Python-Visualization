@@ -67,6 +67,7 @@ class Car:
         self.vis = True
         self.hl = False
         self.state = ""
+        self.ang = 0.0
 
     def go(self, tx, ty):
         self.tx = float(tx)
@@ -80,6 +81,8 @@ class Car:
             self.x = self.tx
             self.y = self.ty
             return True
+        # Update angle based on movement direction
+        self.ang = atan2(dy, dx)
         self.x += dx / d * self.spd
         self.y += dy / d * self.spd
         return False
@@ -90,23 +93,74 @@ class Car:
     def show(self):
         if not self.vis:
             return
+
+        pushMatrix()
+        translate(self.x, self.y)
+        rotate(self.ang)
+
+        # --- Shadow ---
         noStroke()
-        fill(0, 0, 0, 50)
-        rect(self.x - 14, self.y - 14, 32, 32, 6)
+        fill(0, 0, 0, 55)
+        rect(-19, -10, 42, 24, 5)
+
+        # --- Main body ---
         if self.hl:
             stroke(255, 255, 0)
             strokeWeight(3)
         else:
-            stroke(30)
+            stroke(25)
             strokeWeight(1)
         fill(self.col[0], self.col[1], self.col[2])
-        rect(self.x - 16, self.y - 16, 32, 32, 6)
-        fill(255)
+        rect(-21, -12, 42, 24, 5)
+
+        # --- Roof / cabin (darker shade) ---
         noStroke()
-        textSize(11)
+        r2 = max(self.col[0] - 40, 0)
+        g2 = max(self.col[1] - 40, 0)
+        b2 = max(self.col[2] - 40, 0)
+        fill(r2, g2, b2)
+        rect(-8, -8, 20, 16, 3)
+
+        # --- Windshield (front) ---
+        fill(180, 220, 255, 200)
+        rect(10, -8, 7, 16, 2)
+
+        # --- Rear window ---
+        fill(160, 200, 240, 150)
+        rect(-17, -7, 6, 14, 2)
+
+        # --- Wheels ---
+        fill(35)
+        noStroke()
+        rect(-17, -15, 10, 4, 2)
+        rect(-17, 11, 10, 4, 2)
+        rect(8, -15, 10, 4, 2)
+        rect(8, 11, 10, 4, 2)
+
+        # --- Headlights (front) ---
+        fill(255, 255, 200, 220)
+        rect(19, -9, 3, 5, 1)
+        rect(19, 4, 3, 5, 1)
+
+        # --- Taillights (rear) ---
+        fill(255, 50, 50, 200)
+        rect(-21, -9, 3, 4, 1)
+        rect(-21, 5, 3, 4, 1)
+
+        # --- Label ---
+        fill(255)
+        textSize(9)
         textAlign(CENTER, CENTER)
-        text(self.label, self.x, self.y)
+        text(self.label, 0, 0)
         textAlign(LEFT)
+
+        popMatrix()
+
+        # --- Highlight glow ---
+        if self.hl:
+            noStroke()
+            fill(255, 255, 0, 25 + sin(frameCount * 0.15) * 15)
+            ellipse(self.x, self.y, 50, 50)
 
 # ========== GLOBAL STATE ==========
 current_mode = 0
@@ -357,7 +411,7 @@ def update_semaforo():
     for lane_y_val in [sy(0.38), sy(0.47), sy(0.56)]:
         waiting = [c for c in sem_cars if c.state == "wait" and abs(c.lane_y - lane_y_val) < 5]
         for i, c in enumerate(waiting):
-            qx = sx(0.28) - i * 42
+            qx = sx(0.28) - i * 52
             c.go(qx, c.lane_y)
 
     # Draw counter overlay
@@ -457,9 +511,9 @@ def update_mutex():
         waiting = [c for c in mut_cars if c.state == "wait" and c.side == side]
         for i, c in enumerate(waiting):
             if side == "L":
-                c.go(c.wait_x - i * 42, c.y)
+                c.go(c.wait_x - i * 52, c.y)
             else:
-                c.go(c.wait_x + i * 42, c.y)
+                c.go(c.wait_x + i * 52, c.y)
 
     # Draw lock indicator
     noStroke()
@@ -543,7 +597,7 @@ def update_monitor():
     # Queue
     waiting = [c for c in mon_cars if c.state == "wait"]
     for i, c in enumerate(waiting):
-        c.go(sx(0.32) - i * 42, c.lane_y)
+        c.go(sx(0.32) - i * 52, c.lane_y)
 
     # Auto-managed glow
     if mon_busy:
@@ -623,7 +677,7 @@ def update_seccion_critica():
     # Queue
     waiting = [c for c in sec_cars if c.state == "wait"]
     for i, c in enumerate(waiting):
-        c.go(sx(0.20) - i * 42, c.lane_y)
+        c.go(sx(0.20) - i * 52, c.lane_y)
 
     # Error flash if unprotected and multiple in zone
     if not sec_protected and len(in_zone) > 1:
