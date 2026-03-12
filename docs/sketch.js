@@ -191,8 +191,8 @@ let modeInfo = "";
 
 // Semaforo
 let semCars = [];
-let semMax = 3;
-let semAvail = 3;
+let semMax = 2;
+let semAvail = 2;
 
 // Mutex
 let mutCars = [];
@@ -324,6 +324,21 @@ function drawPanel() {
     noStroke();
     py += 12;
 
+    // Threading primitive label
+    let primNames = [
+        "threading.Semaphore(" + semMax + ")",
+        "threading.Lock()",
+        "threading.Condition()",
+        "threading.Lock()",
+        "SIN threading (error!)",
+        "2x threading.Lock()",
+        "threading.Thread x6"
+    ];
+    fill(100, 220, 255);
+    textSize(11);
+    text(primNames[currentMode], px, py);
+    py += 20;
+
     // Mode info
     fill(200, 220, 240);
     textSize(12);
@@ -373,10 +388,13 @@ function drawPanel() {
     }
     py += 20;
 
-    // Bottom label
-    fill(80, 90, 110);
+    // Thread count
+    let threadCounts = [5, 4, 4, 3, 2, 2, 6];
+    fill(80, 200, 180);
     textSize(10);
-    text("Hilos=Carros | Recursos=Intersecciones/Puentes", px, height - 15);
+    text("Hilos activos: " + threadCounts[currentMode], px, height - 30);
+    fill(80, 90, 110);
+    text("Hilos=Carros | Recursos=Intersecciones", px, height - 15);
 }
 
 // ==============================================
@@ -560,7 +578,7 @@ function updateMutex() {
 
     let ownerStr = mutOwner ? mutOwner.label : "Ninguno";
     let waitN = mutCars.filter(c => c.state === "wait").length;
-    modeInfo = `Estado: ${mutLocked ? "LOCKED" : "UNLOCKED"}\nDueno: ${ownerStr}\nEsperando: ${waitN}`;
+    modeInfo = `Estado: ${mutLocked ? "LOCKED" : "UNLOCKED"}\nDueno del lock: ${ownerStr}\nEsperando: ${waitN}`;
 }
 
 // ==============================================
@@ -801,9 +819,9 @@ function updateCondicionCarrera() {
     for (let c of raceCars) c.show();
 
     if (racePhase === "run") {
-        modeInfo = "Fase: CORRIENDO\nAmbos aceleran al cruce\nSin semaforo ni control";
+        modeInfo = "Fase: CORRIENDO\nAmbos hilos sin sync\nSin semaforo ni lock";
     } else if (racePhase === "crash") {
-        modeInfo = "Fase: COLISION!\nAcceso simultaneo sin\nsincronizacion = error";
+        modeInfo = "COLISION!\nAcceso simultaneo sin\nsincronizacion = error";
     } else {
         modeInfo = "Reiniciando demo...";
     }
@@ -852,15 +870,15 @@ function updateDeadlock() {
         // Labels
         fill(0, 0, 0, 200);
         noStroke();
-        rect(sx(0.20), sy(0.28), 120, 36, 5);
-        rect(sx(0.56), sy(0.18), 120, 36, 5);
+        rect(sx(0.20), sy(0.28), 130, 36, 5);
+        rect(sx(0.56), sy(0.18), 130, 36, 5);
 
         textSize(10);
         textAlign(CENTER, CENTER);
         fill(255, 100, 100);
-        text("H1: Tiene Puente-H\nNecesita Puente-V", sx(0.20) + 60, sy(0.28) + 18);
+        text("H1: lock_h.acquire() OK\nlock_v.acquire() BLOCKED", sx(0.20) + 65, sy(0.28) + 18);
         fill(100, 150, 255);
-        text("H2: Tiene Puente-V\nNecesita Puente-H", sx(0.56) + 60, sy(0.18) + 18);
+        text("H2: lock_v.acquire() OK\nlock_h.acquire() BLOCKED", sx(0.56) + 65, sy(0.18) + 18);
 
         // DEADLOCK text
         fill(255, 60, 60);
@@ -876,9 +894,9 @@ function updateDeadlock() {
     for (let c of deadCars) c.show();
 
     if (deadPhase === "move") {
-        modeInfo = "Fase: Adquiriendo recursos\nH1 -> Puente Horizontal\nH2 -> Puente Vertical";
+        modeInfo = "Adquiriendo recursos...\nH1 -> lock_h (Puente H)\nH2 -> lock_v (Puente V)";
     } else {
-        modeInfo = "DEADLOCK DETECTADO!\nH1 tiene H, necesita V\nH2 tiene V, necesita H\nNinguno puede avanzar";
+        modeInfo = "DEADLOCK DETECTADO!\nH1: tiene lock_h, espera lock_v\nH2: tiene lock_v, espera lock_h\nNinguno puede avanzar";
     }
 }
 
@@ -919,7 +937,7 @@ function updateConcurrencia() {
 
     for (let c of concCars) c.show();
 
-    modeInfo = "Hilos activos: 6\nCada uno en su carril\nVelocidades independientes\nSin recursos compartidos";
+    modeInfo = "Hilos activos: 6\nCada Thread en su carril\nVelocidades independientes\nSin recursos compartidos";
 }
 
 // ==============================================
